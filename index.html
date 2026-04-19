@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clock of Clocks</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="clock-container"></div>
+
+  <script>
+    // Hand angles (degrees, 0 = 12 o'clock, clockwise)
+    const R = 90;   // right  (3 o'clock)
+    const D = 180;  // down   (6 o'clock)
+    const L = 270;  // left   (9 o'clock)
+    const U = 0;    // up     (12 o'clock)
+
+    const P = [225, 225]; // parked (both hands hidden)
+
+    // Digit patterns: 6 rows x 4 cols, each cell = [hand1angle, hand2angle]
+    const DIGITS = {
+      0: [
+        [[D,R],  [R,L],  [L,R],  [D,L]],
+        [[D,U],  P,       P,      [D,U]],
+        [[D,U],  P,       P,      [D,U]],
+        [[D,U],  P,       P,      [D,U]],
+        [[D,U],  P,       P,      [D,U]],
+        [[R,U],  [R,L],  [L,R],  [L,U]],
+      ],
+      1: [
+        [P,       P,      [D,D],  P],
+        [P,       P,      [D,U],  P],
+        [P,       P,      [D,U],  P],
+        [P,       P,      [D,U],  P],
+        [P,       P,      [D,U],  P],
+        [P,       P,      [U,U],  P],
+      ],
+      2: [
+        [[D,R],  [R,L],  [L,R],  [D,L]],
+        [P,       P,      P,      [D,U]],
+        [[D,R],  [R,L],  [L,R],  [L,U]],
+        [[D,U],  P,       P,      P],
+        [[D,U],  P,       P,      P],
+        [[R,U],  [R,L],  [L,R],  [R,L]],
+      ],
+      3: [
+        [[D,R],  [R,L],  [L,R],  [D,L]],
+        [P,       P,      P,      [D,U]],
+        [[D,R],  [R,L],  [L,R],  [L,U]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [D,U]],
+        [[R,D],   [R,L],  [L,R],  [L,U]],
+      ],
+      4: [
+        [[D,D],  P,       P,      [D,D]],
+        [[D,U],  P,       P,      [D,U]],
+        [[R,U],  [R,L],  [R,L],  [L,D]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [U,U]],
+      ],
+      5: [
+        [[D,R],  [R,L],  [L,R],  [L,D]],
+        [[D,U],  P,       P,      P],
+        [[R,U],  [R,L],  [L,R],  [D,L]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [D,U]],
+        [[R,D],  [R,L],  [L,R],  [L,U]],
+      ],
+      6: [
+        [[D,R],  [R,L],  [L,R],  [L,D]],
+        [[D,U],  P,       P,      P],
+        [[D,R],  [R,L],  [L,R],  [D,L]],
+        [[D,U],  P,       P,      [D,U]],
+        [[D,U],  P,       P,      [D,U]],
+        [[R,U],  [R,L],  [L,R],  [L,U]],
+      ],
+      7: [
+        [[D,R],  [R,L],  [L,R],  [D,L]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [U,U]],
+      ],
+      8: [
+        [[D,R],  [R,L],  [L,R],  [D,L]],
+        [[D,U],  P,       P,      [D,U]],
+        [[D,U],  [D,R],  [L,R],  [D,U]],
+        [[D,U],  P,       P,      [D,U]],
+        [[D,U],  P,       P,      [D,U]],
+        [[R,U],  [R,L],  [L,R],  [L,U]],
+      ],
+      9: [
+        [[D,R],  [R,L],  [L,R],  [D,L]],
+        [[D,U],  P,       P,      [D,U]],
+        [[R,U],  [R,L],  [L,R],  [D,U]],
+        [P,       P,      P,      [D,U]],
+        [P,       P,      P,      [D,U]],
+        [[R,D],  [R,L],  [L,R],  [L,U]],
+      ],
+    };
+
+    const container = document.getElementById('clock-container');
+
+    // Build DOM structure: HH : MM : SS
+    function buildDOM() {
+      const elements = [];
+
+      for (let g = 0; g < 3; g++) {
+        const group = document.createElement('div');
+        group.className = 'digit-group';
+
+        for (let d = 0; d < 2; d++) {
+          const digitEl = document.createElement('div');
+          digitEl.className = 'digit';
+          const clocks = [];
+
+          for (let row = 0; row < 6; row++) {
+            for (let col = 0; col < 4; col++) {
+              const mini = document.createElement('div');
+              mini.className = 'mini-clock';
+
+              const hourHand = document.createElement('div');
+              hourHand.className = 'hand hour-hand';
+              const minuteHand = document.createElement('div');
+              minuteHand.className = 'hand minute-hand';
+              const centerDot = document.createElement('div');
+              centerDot.className = 'center-dot';
+
+              mini.appendChild(hourHand);
+              mini.appendChild(minuteHand);
+              mini.appendChild(centerDot);
+              digitEl.appendChild(mini);
+
+              clocks.push({ el: mini, hourHand, minuteHand });
+            }
+          }
+
+          group.appendChild(digitEl);
+          elements.push(clocks);
+        }
+
+        container.appendChild(group);
+
+        // Add colon after first and second groups
+        if (g < 2) {
+          const colon = document.createElement('div');
+          colon.className = 'colon';
+          colon.innerHTML = '<div class="colon-dot"></div><div class="colon-dot"></div>';
+          container.appendChild(colon);
+        }
+      }
+
+      return elements;
+    }
+
+    const digitElements = buildDOM();
+
+    function setDigit(digitClocks, digitValue) {
+      const pattern = DIGITS[digitValue];
+      for (let row = 0; row < 6; row++) {
+        for (let col = 0; col < 4; col++) {
+          const idx = row * 4 + col;
+          const clock = digitClocks[idx];
+          const [a1, a2] = pattern[row][col];
+          const isParked = (a1 === 225 && a2 === 225);
+
+          clock.hourHand.style.transform = `rotate(${a1}deg)`;
+          clock.minuteHand.style.transform = `rotate(${a2}deg)`;
+
+          if (isParked) {
+            clock.el.classList.remove('active');
+            clock.hourHand.style.opacity = '0.15';
+            clock.minuteHand.style.opacity = '0.15';
+            clock.el.querySelector('.center-dot').style.opacity = '0.15';
+          } else {
+            clock.el.classList.add('active');
+            clock.hourHand.style.opacity = '1';
+            clock.minuteHand.style.opacity = '1';
+            clock.el.querySelector('.center-dot').style.opacity = '1';
+          }
+        }
+      }
+    }
+
+    function update() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      const time = h + m + s;
+
+      for (let i = 0; i < 6; i++) {
+        setDigit(digitElements[i], parseInt(time[i]));
+      }
+    }
+
+    update();
+    setInterval(update, 1000);
+  </script>
+</body>
+</html>
